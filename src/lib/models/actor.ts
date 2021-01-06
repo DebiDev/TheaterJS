@@ -1,5 +1,5 @@
 // @ts-ignore
-import * as randomFloat from 'random-float';
+import randomFloat from 'random-float';
 import {ActorConfig} from './actor-config';
 
 const DOCUMENT = typeof window !== 'undefined' && window.document;
@@ -28,18 +28,25 @@ export class Actor {
   constructor(actorName: string, props: ActorConfig = { speed: 0.6, accuracy: 0.6 }, callback: (displayValue: string) => void = null) {
     this.actorName = actorName;
     this.actorConfig = props;
-    if (DOCUMENT && callback == null) {
-      const selector = `#${actorName}`;
-      const $e = DOCUMENT.querySelector(selector);
+    if (DOCUMENT) {
+      if (callback == null) {
+        const selector = `#${actorName}`;
+        const $e = DOCUMENT.querySelector(selector);
 
-      if ($e != null) {
-        this.element = $e;
-        this.callback = newValue => {
-          this.element.innerHTML = newValue;
-        };
+        if ($e != null) {
+          this.element = $e;
+          this.callback = newValue => {
+            this.element.innerHTML = newValue;
+          };
+        } else {
+          throw new Error(`no matches for ${actorName}'s selector: ${selector}`);
+        }
+      } else if (typeof callback !== 'function') {
+        this.callback = console.log.bind(console);
       } else {
-        throw new Error(`no matches for ${actorName}'s selector: ${selector}`);
+        this.callback = callback;
       }
+
     }
   }
 

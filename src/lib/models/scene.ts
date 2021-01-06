@@ -1,4 +1,4 @@
-export type ArgsType = (string | number | (() => void));
+export type ArgsType = (string[] | string | number | (() => void) | Scene);
 
 export class Scene {
   name: string;

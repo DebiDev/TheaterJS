@@ -4,5 +4,5 @@ export class ActorConfig {
   constructor(accuracy = 0.8, speed = 0.8) {
     this.accuracy = accuracy;
     this.speed = speed;
-}
+  }
 }

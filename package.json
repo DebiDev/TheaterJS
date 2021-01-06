@@ -11,5 +11,25 @@
     "tslib": "^2.0.0",
     "void-elements": "^3.1.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@angular/common": "^11.0.5",
+    "@angular/core": "^11.0.5",
+    "@types/jasmine": "^3.6.2",
+    "@types/node": "^12.11.1",
+    "codelyzer": "^6.0.0",
+    "jasmine-core": "~3.6.0",
+    "jasmine-spec-reporter": "~5.0.0",
+    "karma": "~5.1.0",
+    "karma-chrome-launcher": "~3.1.0",
+    "karma-coverage": "~2.0.3",
+    "karma-jasmine": "~4.0.0",
+    "karma-jasmine-html-reporter": "^1.5.0",
+    "lodash": "^4.17.20",
+    "random-float": "^2.0.0",
+    "random-int": "^2.0.1",
+    "rxjs": "^6.6.3",
+    "tslib": "^2.0.3",
+    "void-elements": "^3.1.0"
+  }
 }

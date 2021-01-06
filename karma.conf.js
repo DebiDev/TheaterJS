@@ -39,6 +39,10 @@ module.exports = function (config) {
     autoWatch: true,
     browsers: ['Chrome'],
     singleRun: false,
-    restartOnFileChange: true
+    restartOnFileChange: true,
+    captureTimeout: 21000000,
+    browserDisconnectTolerance: 3,
+    browserDisconnectTimeout : 21000000,
+    browserNoActivityTimeout : 21000000,
   });
 };

@@ -8,8 +8,8 @@
     "declarationMap": true,
     "inlineSources": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "types": [],
+    "allowSyntheticDefaultImports": true,
+    "types": ["jasmine"],
     "lib": [
       "dom",
       "es2018"
@@ -21,8 +21,6 @@
     "enableResourceInlining": true
   },
   "exclude": [
-    "src/test.ts",
-    "**/*.spec.ts",
     "node_modules"
   ]
 }
