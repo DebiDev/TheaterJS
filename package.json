@@ -1,6 +1,10 @@
 {
   "name": "theater-ts",
   "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DebiDev/TheaterTS"
+  },
   "peerDependencies": {
     "@angular/common": "^11.0.5",
     "@angular/core": "^11.0.5",

@@ -29,18 +29,17 @@ export class Actor {
     this.actorName = actorName;
     this.actorConfig = props;
     if (DOCUMENT) {
+      const selector = `#${actorName}`;
+      const $e = DOCUMENT.querySelector(selector);
+      if ($e != null) {
+        this.element = $e;
+      } else {
+        throw new Error(`no matches for ${actorName}'s selector: ${selector}`);
+      }
       if (callback == null) {
-        const selector = `#${actorName}`;
-        const $e = DOCUMENT.querySelector(selector);
-
-        if ($e != null) {
-          this.element = $e;
-          this.callback = newValue => {
-            this.element.innerHTML = newValue;
-          };
-        } else {
-          throw new Error(`no matches for ${actorName}'s selector: ${selector}`);
-        }
+        this.callback = newValue => {
+          this.element.innerHTML = newValue;
+        };
       } else if (typeof callback !== 'function') {
         this.callback = console.log.bind(console);
       } else {

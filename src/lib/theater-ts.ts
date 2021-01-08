@@ -221,7 +221,6 @@ export class TheaterTS {
     if (nextScene.actor) {
       this.setCurrentActor(nextScene.actor);
     }
-    console.log(nextScene);
     this.publish(`${nextScene.name}:start`, nextScene);
     switch (nextScene.name) {
       case 'type':
@@ -270,7 +269,6 @@ export class TheaterTS {
       if (actual === value) { return done(); }
 
       const expected = value.substr(0, cursor + 1);
-      console.log(expected);
       const isMistaking = actual !== expected;
       const shouldBeMistaken = actor.shouldBeMistaken(
         actual,
@@ -301,7 +299,6 @@ export class TheaterTS {
             previousMistakeCursor = cursor;
           }
         }
-
         actor.displayValue =
           initialValue + that.html.inject(actual + nextChar, htmlMap);
       }
