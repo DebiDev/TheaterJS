@@ -341,6 +341,21 @@ A couple of things to note:
 - An event is emitted when the scenario starts and ends, respectively `scenario:start` and `scenario:end`.
 - The scenario is stoppable within `:end` event listeners. It means that calling `theater.stop()` within a callback that listen for the `:end` of a scene will stop the scenario. This is useful for asynchronous callbacks (e.g animations).
 
+### Tag
+
+TheaterTS, so has TheaterJS, modifies the innerHTMl of the actor and handles HTML tag by surrounding the sentences with its corresponding tag on each letter it enters. 
+
+**Example**
+```typescript
+var theater = TheaterTS();
+
+theater.addActor("vader")
+    .addScene("vader:Luke...")
+    .addScene(`<div class="dark-voice">I'm your father</div>`);
+```
+
+Note: Don't forget to use `Encapsulation.none` on Angular, so the class can be taken into account 
+
 ## Localized Keyboards
 
 When making a mistake, an actor's gonna type a random character near the one he intended to.
