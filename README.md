@@ -356,6 +356,8 @@ theater.addActor("vader")
 
 Note: Don't forget to use `Encapsulation.none` on Angular, so the class can be taken into account 
 
+Note: If you want to use some `:` in your sentence, you'll need to add `\\` before each of them
+
 ## Localized Keyboards
 
 When making a mistake, an actor's gonna type a random character near the one he intended to.
