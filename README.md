@@ -2,7 +2,7 @@
 
 Typing animation mimicking human behavior.
 
-This repository is rework in Angular of the library [TheaterJS](https://github.com/Zhouzi/TheaterJS) done by [Zhouzi](https://github.com/Zhouzi)
+This repository is a rework in Typescript of the library [TheaterJS](https://github.com/Zhouzi/TheaterJS) done by [Zhouzi](https://github.com/Zhouzi)
 
 - [CodePen Demo](http://codepen.io/Zhouzi/full/JoRazP/)
 - [Showcase](https://github.com/DebiDev/TheaterTS#showcase)
@@ -27,58 +27,48 @@ npm install theater-ts
 <div id="luke"></div>
 ```
 ```typescript
-let theater = theaterTS();
-
-theater
-.on("type:start, erase:start", function() {
+const theaterOptions = new TheaterConfig(true, true, new SpeedConfig(80, 80), new SpeedConfig(450, 450));
+this.theaterTS = new TheaterTS(theaterOptions);
+this.theaterTS.on('type:start, erase:start', () => {
   // add a class to actor's dom element when he starts typing/erasing
-  var actor = theater.getCurrentActor();
-  actor.$element.classList.add("is-typing");
+  const actor = this.theaterTS.getCurrentActor();
+  actor.element.classList.add('is-typing');
 })
-.on("type:end, erase:end", function() {
+.on('type:end, erase:end', () => {
   // and then remove it when he's done
-  var actor = theater.getCurrentActor();
-  actor.$element.classList.remove("is-typing");
+  const actor = this.theaterTS.getCurrentActor();
+  actor.element.classList.remove('is-typing');
 });
+this.theaterTS
+  .addActor('vader', new ActorConfig(0.5, 0.5))
+this.theater.addActor("vader").addActor("luke");
 
-theater.addActor("vader").addActor("luke");
-
-theater
+this.theater
 .addScene("vader:Luke...", 400)
 .addScene("luke:What?", 400)
 .addScene("vader:I am", 200, ".", 200, ".", 200, ". ")
 .addScene("Your father!")
-.addScene(theater.replay);
+.addScene(theater.replay());
 ```
 
 ## Documentation
 
-To get started, you'll first need to create a new TheaterTS object by eventually providing some options.
+To get started, you'll first need to create a new TheaterTS object by providing some options.
 
-**Example**
-
-```typescript
-var theater = theaterJS({ locale: "fr" });
-```
-
-**Usage**
-
-```typescript
-theaterTS(<options>)
-```
 
 | Param   | Default                                  | Description            |
 | ------- | ---------------------------------------- | ---------------------- |
-| options | `{autoplay, locale, minSpeed, maxSpeed}` | Options _(see below)_. |
+| options | `{autoplay, erase, minSpeed, maxSpeed, locale}` | Options _(see below)_. |
 
 Breakdown of the available options:
 
 | Option   | Default                     | Description                                                                                                                                                    |
 | -------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | autoplay | `true`                      | If true, automatically play the scenario (when calling `addScene`).                                                                                            |
-| locale   | `detect`                    | Determine which keyboard to use when typing random characters (mistakes). Note: `"detect"` is an option to detect the user's locale and use if it's supported. |
+| erase    | `true`                      | Whether you want an erase animation or not (in this case, it will just erase the whole sentence)                                                               |
 | minSpeed | `{ erase: 80, type: 80 }`   | Minimum delay between each typed characters (the lower, the faster).                                                                                           |
 | maxSpeed | `{ erase: 450, type: 450 }` | The maximum delay between each typed characters (the greater, the slower).                                                                                     |
+| locale   | `detect`                    | Determine which keyboard to use when typing random characters (mistakes). Note: `"detect"` is an option to detect the user's locale and use if it's supported. |
 
 TheaterTS objects have two public (read only) properties:
 
@@ -92,7 +82,7 @@ Add an actor to the casting.
 **Example**
 
 ```typescript
-var theater = theaterJS();
+var theater = TheaterTS();
 
 theater
   .addActor("vader")
@@ -108,22 +98,26 @@ theater
 theater.addActor(<name>, <options>, <callback>)
 ```
 
-| Param    | Default         | Description                                            |
-| -------- | --------------- | ------------------------------------------------------ |
-| name     |                 | Name used to identify the actor.                       |
-| options  | 0.8             | Actor's options **(see below)**.                       |
-| callback | **(see below)** | A function to call when actor's display value changes. |
+| Param                      | Default                   | Description                                                  |
+| -------------------------- | ------------------------- | ------------------------------------------------------------ |
+| name: string               |                           | Name used to identify the actor.                             |
+| options: ActorConfig       | accuracy: 0.8, speed: 0.8 | Actor's options, use it like this: new ActorConfig(0.5, 0.6) |
+| callback: (string) => void | **(see below)**           | A function to call when actor's display value changes.       |
 
 Actors have two options:
 
-- `accuracy` (number between 0 and 1): used to determine how often an actor should make mistakes.
+- `accuracy` (number between 0 and 0.8): used to determine how often an actor should make mistakes.
 - `speed` (number between 0 and 1): used to determine how fast the actor types.
 
 Note: the delay between each typed character varies to "mimick human behavior".
 
 An actor callback is a function that is called when its display value is set.
-It can also be a string, in such case TheaterJS will assume it's a DOM selector and will look for the corresponding element.
-It's then going to set the element's innerHTML when the value changes.
+The default callbalck is : 
+```typescript
+(newValue) => {
+  this.element.innerHTML = newValue;
+}
+```
 You can safely ignore this argument if you gave the target element an id with the name of the actor, i.e:
 
 ```typescript
@@ -140,12 +134,12 @@ Return the actor that is currently playing.
 **Example**
 
 ```typescript
-var theater = theaterJS();
+const theater = TheaterTS();
 
 theater
   .addActor("vader")
   .addScene("vader:Luke...")
-  .addScene(function(done) {
+  .addScene((done) => {
     var vader = theater.getCurrentActor();
     vader.$element.classList.add("dying");
     done();
@@ -155,7 +149,7 @@ theater
 **Usage**
 
 ```typescript
-theater.getCurrentActor();
+this.theater.getCurrentActor();
 ```
 
 ### addScene
@@ -165,12 +159,12 @@ Add scenes to the scenario and play it if `options.autoplay` is true.
 **Example**
 
 ```typescript
-var theater = theaterJS();
+const theater = TheaterTS();
 
 theater
   .addActor("vader")
   .addScene("vader:Luke... ", "Listen to me!", 500)
-  .addScene(theater.replay);
+  .addScene(theater.replay());
 ```
 
 **Usage**
@@ -216,12 +210,12 @@ Return the speech that is currently playing.
 **Example**
 
 ```typescript
-var theater = theaterJS();
+const theater = TheaterTS();
 
 theater
   .addActor("vader")
   .addScene("vader:Luke...")
-  .on("type:start", function() {
+  .on("type:start", () => {
     console.log(theater.getCurrentSpeech()); // outputs 'Luke...'
   });
 ```
@@ -229,7 +223,7 @@ theater
 **Usage**
 
 ```typescript
-theater.getCurrentSpeech();
+this.theater.getCurrentSpeech();
 ```
 
 ### play
@@ -239,7 +233,7 @@ Play the scenario.
 **Example**
 
 ```typescript
-var theater = theaterJS({ autoplay: false });
+var theater = TheaterTS({ autoplay: false });
 
 theater.addActor("vader").addScene("vader:Luke...");
 
@@ -265,12 +259,12 @@ Replay the scenario from scratch (can be used as a callback to create a loop).
 **Example**
 
 ```typescript
-var theater = theaterJS();
+var theater = TheaterTS();
 
 theater
   .addActor("vader")
   .addScene("vader:Luke...")
-  .addScene(theater.replay);
+  .addScene(theater.replay());
 ```
 
 **Usage**
@@ -286,7 +280,7 @@ Stop the scenario after the current playing scene ends.
 **Example**
 
 ```typescript
-var theater = theaterJS();
+var theater = TheaterTS();
 
 theater.addActor("vader").addScene("vader:Luke... ", "I am your father...");
 
@@ -312,7 +306,7 @@ Add a callback to execute when an event is emitted (e.g when a scene starts/ends
 **Example**
 
 ```typescript
-var theater = theaterJS();
+var theater = TheaterTS();
 
 theater
   .on("type:start, erase:start", function() {
@@ -330,7 +324,7 @@ theater.addActor("vader").addScene("vader:Luke...");
 **Usage**
 
 ```typescript
-theater.on(<eventName>, <callback>)
+theater.on(eventName: string, callback: () => void)
 ```
 
 | Param     | Default | Description                                    |
@@ -350,4 +344,6 @@ A couple of things to note:
 ## Localized Keyboards
 
 When making a mistake, an actor's gonna type a random character near the one he intended to.
-Those characters are taken from a "mapped" keyboard that you can configure on TheaterJS' instantiation: `theaterJS({locale: 'en'})`.
+Those characters are taken from a "mapped" keyboard that you can configure on TheaterTS' instantiation: `TheaterTS(new TheaterConfig(true, true, new SpeedConfig(80, 80), new SpeedConfig(450, 450), 'en'))`.
+
+Available keyboard: 'en', 'fr', 'da', 'de', 'pl', 'pt', 'ru', 'es', 'el'
