@@ -98,16 +98,32 @@ theater
 theater.addActor(<name>, <options>, <callback>)
 ```
 
-| Param                      | Default                   | Description                                                  |
-| -------------------------- | ------------------------- | ------------------------------------------------------------ |
-| name: string               |                           | Name used to identify the actor.                             |
-| options: ActorConfig       | accuracy: 0.8, speed: 0.8 | Actor's options, use it like this: new ActorConfig(0.5, 0.6) |
-| callback: (string) => void | **(see below)**           | A function to call when actor's display value changes.       |
+| Param                      | Default                                        | Description                                                        |
+| -------------------------- | ---------------------------------------------- | ------------------------------------------------------------------ |
+| name: string               |                                                | Name used to identify the actor.                                   |
+| options: ActorConfig       | accuracy: 0.8, speed: 0.8, displayCaret: false | Actor's options, use it like this: new ActorConfig(0.5, 0.6, true) |
+| callback: (string) => void | **(see below)**                                | A function to call when actor's display value changes.             |
 
-Actors have two options:
+Actors have three options:
 
 - `accuracy` (number between 0 and 0.8): used to determine how often an actor should make mistakes.
 - `speed` (number between 0 and 1): used to determine how fast the actor types.
+- `displayCaret` (boolean): whether you want to display a caret or not. Please be sure not to wrap any text with a `block` balise (like `<div>`)
+
+I didn't create any css file to import for the caret as it directly depends on the font family, but you can base yours with this example: 
+```css
+.caret {
+  color: inherit;
+  font-size: 1.4em;
+  vertical-align: text-bottom;
+  line-height: 0.9;
+  margin-left: -0.2em;
+}
+
+.blinking-caret {
+  animation: blink 1s steps(2, start) infinite;
+}
+```
 
 Note: the delay between each typed character varies to "mimick human behavior".
 
@@ -298,6 +314,14 @@ document.querySelector("button").addEventListener(
 ```typescript
 theater.stop();
 ```
+
+### urgentStop
+
+Stop the scenario during a scene 
+
+### continueCurrentScene
+
+To call after an urgent stop to go back to where we were in the scene
 
 ### on
 
