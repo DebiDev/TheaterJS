@@ -2,11 +2,7 @@
 import * as randomInt from 'random-int';
 // @ts-ignore
 import keyboards from '../constants/keyboards.json';
-import {Injectable} from '@angular/core';
 
-@Injectable({
-  providedIn: 'root',
-})
 export class Keyboard {
 
   defaultLocale = 'en';

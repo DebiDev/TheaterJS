@@ -25,7 +25,10 @@ export class Actor {
     return this.actorName;
   }
 
-  constructor(actorName: string, props: ActorConfig = { speed: 0.6, accuracy: 0.6 }, callback: (displayValue: string) => void = null) {
+  constructor(actorName: string,
+              props: ActorConfig = { speed: 0.6, accuracy: 0.6, displayCaret: true },
+              callback: (displayValue: string) => void = null)
+  {
     this.actorName = actorName;
     this.actorConfig = props;
     if (DOCUMENT) {
@@ -38,7 +41,11 @@ export class Actor {
       }
       if (callback == null) {
         this.callback = newValue => {
-          this.element.innerHTML = newValue;
+          if (this.actorConfig.displayCaret) {
+            this.element.innerHTML = newValue + '<span class="caret">|</span>';
+          } else {
+            this.element.innerHTML = newValue;
+          }
         };
       } else if (typeof callback !== 'function') {
         this.callback = console.log.bind(console);

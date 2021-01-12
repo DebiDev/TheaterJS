@@ -1,9 +1,6 @@
 import voidElements from 'void-elements';
-import {Injectable} from '@angular/core';
+import {Tag} from '../models/tag';
 
-@Injectable({
-  providedIn: 'root',
-})
 export class Html {
 
   isVoidElement(tag: string): boolean {
@@ -55,13 +52,6 @@ export class Html {
         str += tag.tagName;
       }
     }
-
     return str;
   }
-}
-
-interface Tag {
-  tagName: string;
-  position: number;
-  opener?: Tag;
 }

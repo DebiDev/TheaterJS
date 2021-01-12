@@ -1,4 +1,3 @@
-import { Component } from '@angular/core';
 import {TheaterConfig} from './models/thearter-config';
 import {Keyboard} from './services/keyboard.service';
 import {TheaterProps} from './models/theater-props';
@@ -6,6 +5,7 @@ import {Actor} from './models/actor';
 import {ActorConfig} from './models/actor-config';
 import {ArgsType, Scene} from './models/scene';
 import {Html} from './services/html.service';
+import {SceneState} from './models/scene-state';
 
 export class TheaterTS {
 
@@ -22,6 +22,8 @@ export class TheaterTS {
   private html = new Html();
   private keyboard = new Keyboard();
   private props: TheaterProps = new TheaterProps();
+  private timestampInstance;
+  private playAfterUrgentStop = false;
 
   constructor(options: TheaterConfig = {
     autoplay: true,
@@ -47,8 +49,20 @@ export class TheaterTS {
     this.props.status = 'ready';
     this.props.onStage = null;
     this.props.currentScene = -1;
+    this.props.currentSceneState = new SceneState();
     this.props.scenario = [];
     this.props.events = [];
+
+    this
+      .on('type:end, erase:end, scenario:end', () => {
+        const actor = this.getCurrentActor();
+        const addBlinkAnim = () => {
+          if (actor.actorConfig.displayCaret && actor.element.getElementsByClassName('caret').length > 0) {
+            actor.element.getElementsByClassName('caret')[0].classList.add('blinking-caret');
+          }
+        };
+        setTimeout(addBlinkAnim, 500);
+      });
 
     this.setCurrentActor(null);
   }
@@ -132,7 +146,6 @@ export class TheaterTS {
         .concat({name: 'publisher', args: ['sequence:end']})
     );
     Array.prototype.push.apply(this.props.scenario, sequence);
-
     if (this.props.options.autoplay) {
       this.play();
     }
@@ -147,14 +160,32 @@ export class TheaterTS {
     return speech || null;
   }
 
-  play(): TheaterTS {
+  continueCurrentScene(): void {
     if (this.props.status === 'stopping') {
       this.props.status = 'playing';
+      if (this.props.currentSceneState.type === 'type') {
+        this.typeAction();
+      } else if (this.props.currentSceneState.type === 'erase') {
+        this.eraseAction();
+      }
     }
+  }
 
-    if (this.props.status === 'ready') {
+  play(): TheaterTS {
+    if (!this.playAfterUrgentStop) {
+      if (this.props.status === 'stopping') {
+        this.props.status = 'playing';
+        this.playNextScene();
+      }
+
+      if (this.props.status === 'ready') {
+        this.props.status = 'playing';
+        this.playNextScene();
+      }
+    } else {
       this.props.status = 'playing';
-      this.playNextScene();
+      this.playAfterUrgentStop = false;
+      this.continueCurrentScene();
     }
 
     return this;
@@ -173,6 +204,14 @@ export class TheaterTS {
 
   stop(): TheaterTS {
     this.props.status = 'stopping';
+    return this;
+  }
+
+  urgentStop(): TheaterTS {
+    this.playAfterUrgentStop = true;
+    this.props.status = 'stopping';
+    clearInterval(this.timestampInstance);
+    this.publish('type:end');
     return this;
   }
 
@@ -224,18 +263,32 @@ export class TheaterTS {
     this.publish(`${nextScene.name}:start`, nextScene);
     switch (nextScene.name) {
       case 'type':
-        this.typeAction(nextScene.args[0] as () => void, nextScene.args[1] as string);
+        this.resetSceneState();
+        this.props.currentSceneState.type = 'type';
+        this.props.currentSceneState.cursor = -1;
+        this.props.currentSceneState.done = nextScene.args[0] as () => void;
+        this.props.currentSceneState.typeValue = this.html.strip(nextScene.args[1] as string);
+        this.props.currentSceneState.htmlMap = this.html.map(nextScene.args[1] as string);
+        this.props.currentSceneState.initialValue = this.getCurrentActor().displayValue;
+        this.typeAction();
         break;
 
       case 'erase':
-        this.eraseAction(nextScene.args[0] as () => void, nextScene.args[1]);
+        this.resetSceneState();
+        this.props.currentSceneState.type = 'erase';
+        this.props.currentSceneState.cursor = this.getCurrentActor().displayValue.length;
+        this.props.currentSceneState.done = nextScene.args[0] as () => void;
+        this.props.currentSceneState.eraseArgs = nextScene.args[1];
+        this.eraseAction();
         break;
 
       case 'callback':
+        this.resetSceneState();
         this.callbackAction(nextScene.args[0] as () => void, nextScene.args[1] as () => void);
         break;
 
       case 'wait':
+        this.resetSceneState();
         this.waitAction(nextScene.args[0] as () => void, nextScene.args[1] as number);
         break;
 
@@ -247,80 +300,80 @@ export class TheaterTS {
     return this;
   }
 
-  private typeAction(done: () => void, value: string): TheaterTS {
+  private resetSceneState(): void {
+    this.props.currentSceneState.type = null;
+    this.props.currentSceneState.cursor = null;
+    this.props.currentSceneState.isFixing = false;
+    this.props.currentSceneState.previousMistakeCursor = null;
+    this.props.currentSceneState.previousFixCursor = null;
+    this.props.currentSceneState.done = null;
+    this.props.currentSceneState.eraseArgs = null;
+    this.props.currentSceneState.htmlMap = null;
+    this.props.currentSceneState.initialValue = null;
+  }
+
+  private typeAction(): TheaterTS {
     const actor = this.getCurrentActor();
     const that = this;
     const { locale } = this.props.options;
     const minSpeed = this.props.options.minSpeed.type;
     const maxSpeed = this.props.options.maxSpeed.type;
-    const initialValue = actor.displayValue;
-    let cursor = -1;
-    let isFixing = false;
-    let previousMistakeCursor = null;
-    let previousFixCursor = null;
-
-    const htmlMap = this.html.map(value);
-    value = this.html.strip(value);
-
+    const initialValue = this.props.currentSceneState.initialValue;
     function type(): void {
 
       const actual = that.html.strip(actor.displayValue.substr(initialValue.length));
-
-      if (actual === value) { return done(); }
-
-      const expected = value.substr(0, cursor + 1);
+      if (actual === that.props.currentSceneState.typeValue) { return that.props.currentSceneState.done(); }
+      const expected = that.props.currentSceneState.typeValue.substr(0, that.props.currentSceneState.cursor + 1);
       const isMistaking = actual !== expected;
       const shouldBeMistaken = actor.shouldBeMistaken(
         actual,
-        value,
-        previousMistakeCursor,
-        previousFixCursor
+        that.props.currentSceneState.typeValue,
+        that.props.currentSceneState.previousMistakeCursor,
+        that.props.currentSceneState.previousFixCursor
       );
-
-      const shouldFix = isFixing || !shouldBeMistaken;
-
+      const shouldFix = that.props.currentSceneState.isFixing || !shouldBeMistaken;
       if (isMistaking && shouldFix) {
-        isFixing = true;
-        previousMistakeCursor = null;
+        that.props.currentSceneState.isFixing = true;
+        that.props.currentSceneState.previousMistakeCursor = null;
         actor.displayValue =
           initialValue +
-          that.html.inject(actual.substr(0, actual.length - 1), htmlMap);
-        cursor -= 1;
-        previousFixCursor = cursor;
+          that.html.inject(actual.substr(0, actual.length - 1), that.props.currentSceneState.htmlMap);
+        that.props.currentSceneState.cursor -= 1;
+        that.props.currentSceneState.previousFixCursor = that.props.currentSceneState.cursor;
       } else {
-        isFixing = false;
-        cursor += 1;
-        let nextChar = value.charAt(cursor);
+        that.props.currentSceneState.isFixing = false;
+        that.props.currentSceneState.cursor += 1;
+        let nextChar = that.props.currentSceneState.typeValue.charAt(that.props.currentSceneState.cursor);
 
         if (shouldBeMistaken) {
           nextChar = that.keyboard.randomCharNear(nextChar, locale);
 
-          if (previousMistakeCursor == null) {
-            previousMistakeCursor = cursor;
+          if (that.props.currentSceneState.previousMistakeCursor == null) {
+            that.props.currentSceneState.previousMistakeCursor = that.props.currentSceneState.cursor;
           }
         }
         actor.displayValue =
-          initialValue + that.html.inject(actual + nextChar, htmlMap);
+          initialValue + that.html.inject(actual + nextChar, that.props.currentSceneState.htmlMap);
       }
-      setTimeout(type, actor.getTypingSpeed(minSpeed, maxSpeed));
+      that.timestampInstance = setTimeout(type, actor.getTypingSpeed(minSpeed, maxSpeed));
     }
     type();
     return this;
   }
 
-  private eraseAction(done: () => void, arg: ArgsType): TheaterTS {
+  private eraseAction(): TheaterTS {
     const actor = this.getCurrentActor();
     const that = this;
     // erase scenes are added before a type scene
     // so for the first scene, there's no actor yet
     if (actor == null) {
-      done();
+      that.props.currentSceneState.done();
       return null;
     }
 
     if (this.options.erase !== true) {
       actor.displayValue = '';
-      done();
+      that.props.currentSceneState.done();
       return null;
     }
 
@@ -337,16 +390,17 @@ export class TheaterTS {
     let speed: number;
     let nbCharactersToErase = 0;
 
-    if (typeof arg === 'number') {
-      if (arg > 0) { speed = arg; }
-      else { nbCharactersToErase = value.length + arg; }
+    if (typeof this.props.currentSceneState.eraseArgs === 'number') {
+      if (this.props.currentSceneState.eraseArgs > 0) { speed = this.props.currentSceneState.eraseArgs; }
+      else { nbCharactersToErase = value.length + this.props.currentSceneState.eraseArgs; }
     }
 
     function erase(): void {
-      if (cursor === nbCharactersToErase) { return done(); }
+      if (cursor === nbCharactersToErase) { return that.props.currentSceneState.done(); }
       cursor -= 1;
+      (that.props.currentSceneState.eraseArgs as number) += 1;
       actor.displayValue = that.html.inject(value.substr(0, cursor), htmlMap);
-      setTimeout(
+      that.timestampInstance = setTimeout(
         erase,
         speed || actor.getTypingSpeed(minSpeed, maxSpeed)
       );
@@ -361,7 +415,7 @@ export class TheaterTS {
   }
 
   private waitAction(done: () => void, delay: number): TheaterTS {
-    setTimeout(done.bind(this), delay);
+    this.timestampInstance = setTimeout(done.bind(this), delay);
     return this;
   }
 
@@ -372,7 +426,9 @@ export class TheaterTS {
     if (callbacks.length > 0) {
       callbacks
         .concat(this.props.events['*'] || [])
-        .forEach(callback => callback(...args));
+        .forEach(callback => {
+          callback(...args);
+        });
     }
 
     return this;
