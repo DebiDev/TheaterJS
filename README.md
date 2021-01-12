@@ -123,6 +123,12 @@ I didn't create any css file to import for the caret as it directly depends on t
 .blinking-caret {
   animation: blink 1s steps(2, start) infinite;
 }
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
 ```
 
 Note: the delay between each typed character varies to "mimick human behavior".
